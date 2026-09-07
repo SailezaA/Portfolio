@@ -1,0 +1,22 @@
+{
+  "name": "Pragya Awasthi | Software Developer & DevOps",
+  "short_name": "Pragya Awasthi",
+  "description": "Portfolio of Pragya Awasthi, Software Developer and DevOps Enthusiast based in Kathmandu, Nepal.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#090d16",
+  "theme_color": "#38bdf8",
+  "icons": [
+    {
+      "src": "assets/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/pragya-awasthi.jpg",
+      "sizes": "924x976",
+      "type": "image/jpeg"
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+# robots.txt for Pragya Awasthi Developer Portfolio
+User-agent: *
+Allow: /
+
+Sitemap: https://pragyaawasthi.dev/sitemap.xml
