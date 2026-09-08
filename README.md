@@ -79,18 +79,38 @@ npx -y serve .
 
 ```
 apps/portfolio/
-├── index.html        # Semantic, accessible HTML5 structure & SEO metadata
+├── index.html              # Semantic HTML5 layout with component mount points & SEO metadata
 ├── css/
-│   └── style.css     # CSS custom properties, light/dark themes, responsive grids, @media print
+│   └── style.css           # Modern CSS tokens, responsive layout, glassmorphism, @media print
 ├── js/
-│   └── main.js       # Theme switcher, modals, skill filters, search, clipboard toasts, contact form
-└── README.md         # Documentation & guide
+│   ├── app.js              # Application lifecycle, component mounting & controllers
+│   ├── components/         # Reusable Vanilla UI Components
+│   │   ├── StatCard.js     # Key metric stat highlight card
+│   │   ├── SkillCard.js    # Categorized technical competency card
+│   │   ├── ProjectCard.js  # Project card with banner, badge, features & tags
+│   │   ├── TimelineItem.js # Work experience career milestone card
+│   │   ├── EducationCard.js# Academic & verified credential cards
+│   │   ├── ProjectModal.js # Architecture deep-dive modal controller
+│   │   ├── ResumeModal.js  # Interactive CV viewer modal controller
+│   │   └── Toast.js        # Dynamic notification toast system
+│   └── data/               # Single Source of Truth Data Models
+│       ├── profileData.js  # Personal bio, title, links, and contact info
+│       ├── statsData.js    # Highlight stats (experience, projects, stack)
+│       ├── skillsData.js   # Skills categorized by domain with category tags
+│       ├── projectsData.js # Showcase projects & architecture deep-dive details
+│       ├── experienceData.js# Professional career timeline & milestones
+│       └── educationData.js# Formal degrees, training & verified certificates
+└── README.md               # Documentation & guide
 ```
 
 ---
 
 ## ✏️ Customizing Your Content
 
-- **Contact Info / Socials**: Edit the header and contact section in [index.html](file:///Users/jaivasuki648/frappe_pro/apps/portfolio/index.html).
-- **New Projects**: Add new project cards to the `.projects-grid` in `index.html` and add corresponding deep-dive details in `projectData` inside [js/main.js](file:///Users/jaivasuki648/frappe_pro/apps/portfolio/js/main.js).
-- **Colors & Aesthetics**: Modify CSS variables in `:root` and `[data-theme="light"]` in [css/style.css](file:///Users/jaivasuki648/frappe_pro/apps/portfolio/css/style.css).
+Thanks to the modular component architecture, content and presentation are cleanly separated:
+
+- **Add or Edit Projects**: Update `projectsData.js` in `js/data/`. Cards and architecture deep-dive modals render automatically with no duplicate HTML!
+- **Add or Edit Skills**: Update `skillsData.js` in `js/data/`. Category filtering and live search update instantly.
+- **Update Career & Education**: Update `experienceData.js` and `educationData.js` in `js/data/`.
+- **Change Profile Info**: Update `profileData.js` in `js/data/`.
+- **Colors & Aesthetics**: Modify CSS variables in `:root` and `[data-theme="light"]` in `css/style.css`.
