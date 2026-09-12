@@ -341,6 +341,35 @@ function initClipboardAndContact() {
         formFeedback.innerHTML = '';
       }
 
+      // Check if browsing locally via file:// protocol
+      if (window.location.protocol === 'file:') {
+        showToast('Local file (file://) detected. Testing requires web server.', 'error');
+        const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(profileData.email)}&su=${encodeURIComponent(`[Portfolio Contact] ${subject}`)}&body=${encodeURIComponent(`Hi Pragya,\n\nName: ${name}\nEmail: ${email}\n\n${message}`)}`;
+        if (formFeedback) {
+          formFeedback.className = 'form-feedback info';
+          formFeedback.innerHTML = `
+            <div class="form-feedback-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </div>
+            <div class="form-feedback-content">
+              <strong>Local File Preview (<code>file:///</code>) Detected:</strong><br>
+              Browsers block external form API requests from local files.<br>
+              Please test form submissions on your live GitHub Pages site:
+              <div class="form-feedback-actions">
+                <a href="https://sailezaa.github.io/Portfolio/#contact" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-primary">
+                  Open Live GitHub Pages
+                </a>
+                <a href="${gmailUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-secondary">
+                  Open in Web Gmail
+                </a>
+              </div>
+            </div>
+          `;
+          formFeedback.style.display = 'flex';
+        }
+        return;
+      }
+
       // Show button loading spinner & disable during transmission
       const originalBtnContent = submitBtn ? submitBtn.innerHTML : 'Send Message';
       if (submitBtn) {
@@ -370,6 +399,71 @@ function initClipboardAndContact() {
 
         const data = await response.json().catch(() => null);
 
+        // 1. Handle One-Time Activation Requirement from FormSubmit
+        if (data && data.message && /activ/i.test(data.message)) {
+          showToast('Almost there! Please check your email to activate the form.', 'info');
+          if (formFeedback) {
+            formFeedback.className = 'form-feedback info';
+            formFeedback.innerHTML = `
+              <div class="form-feedback-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              </div>
+              <div class="form-feedback-content">
+                <strong>One-Time Activation Required:</strong><br>
+                FormSubmit has received your message and sent an activation email to <strong>${profileData.email}</strong>.<br><br>
+                Please open your Gmail, click <strong>"Activate Form"</strong> in the email, and from then on all messages will arrive directly in your inbox!
+                <div class="form-feedback-actions">
+                  <a href="https://mail.google.com" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-primary">
+                    Open Gmail to Activate
+                  </a>
+                  <button type="button" class="btn btn-sm btn-secondary copy-email-fallback-btn" data-email="${profileData.email}">
+                    Copy ${profileData.email}
+                  </button>
+                </div>
+              </div>
+            `;
+            formFeedback.style.display = 'flex';
+
+            const copyFallbackBtn = formFeedback.querySelector('.copy-email-fallback-btn');
+            if (copyFallbackBtn) {
+              copyFallbackBtn.addEventListener('click', async () => {
+                try {
+                  await navigator.clipboard.writeText(profileData.email);
+                  showToast(`Copied ${profileData.email} to clipboard!`, 'success');
+                } catch (err) {
+                  showToast(`Email: ${profileData.email}`);
+                }
+              });
+            }
+          }
+          return;
+        }
+
+        // 2. Handle Web Server requirement message
+        if (data && data.message && /web server|HTML files/i.test(data.message)) {
+          showToast('Form submission requires a web server.', 'error');
+          if (formFeedback) {
+            formFeedback.className = 'form-feedback info';
+            formFeedback.innerHTML = `
+              <div class="form-feedback-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              </div>
+              <div class="form-feedback-content">
+                <strong>Web Server Required:</strong> FormSubmit requires the page to be hosted on HTTP/HTTPS.<br>
+                Please test directly on your live deployed portfolio:
+                <div class="form-feedback-actions">
+                  <a href="https://sailezaa.github.io/Portfolio/#contact" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-primary">
+                    Open Live GitHub Pages
+                  </a>
+                </div>
+              </div>
+            `;
+            formFeedback.style.display = 'flex';
+          }
+          return;
+        }
+
+        // 3. Normal Success Delivery
         if (response.ok && (!data || data.success === 'true' || data.success === true)) {
           contactForm.reset();
           showToast('Message sent directly to Pragya\'s inbox!', 'success');
@@ -394,6 +488,9 @@ function initClipboardAndContact() {
         showToast('Unable to send automatically. Please use the direct links below.', 'error');
 
         const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(profileData.email)}&su=${encodeURIComponent(`[Portfolio] ${subject}`)}&body=${encodeURIComponent(`Hi Pragya,\n\nName: ${name}\nEmail: ${email}\n\n${message}`)}`;
+        const errorMessage = error?.message && error.message !== 'Failed to fetch'
+          ? error.message
+          : 'An adblocker or network error prevented automatic delivery.';
 
         if (formFeedback) {
           formFeedback.className = 'form-feedback error';
@@ -402,7 +499,7 @@ function initClipboardAndContact() {
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             </div>
             <div class="form-feedback-content">
-              <strong>Transmission interrupted.</strong> An adblocker or network error prevented automatic delivery.
+              <strong>Transmission issue:</strong> ${errorMessage}
               <div class="form-feedback-actions">
                 <a href="${gmailUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-primary">
                   Open in Web Gmail
