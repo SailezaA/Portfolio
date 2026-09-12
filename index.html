@@ -622,7 +622,15 @@
             <h3 class="contact-col-title">Send a Direct Message</h3>
             <p class="contact-col-desc">Use this quick contact form to send an inquiry directly to my inbox.</p>
 
-            <form id="contactForm" class="contact-form">
+            <form id="contactForm" class="contact-form" action="https://formsubmit.co/pragyaawasthi248@gmail.com" method="POST">
+              <!-- Anti-bot Honeypot field (hidden from human users) -->
+              <input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off">
+              <!-- Disable FormSubmit captcha redirect page for seamless API delivery -->
+              <input type="hidden" name="_captcha" value="false">
+              <!-- Fallback redirect if submitted without JavaScript -->
+              <input type="hidden" name="_next" value="https://sailezaa.github.io/Portfolio/?status=success#contact">
+              <input type="hidden" name="_template" value="table">
+
               <div class="form-group">
                 <label for="contactName">Your Name</label>
                 <input type="text" id="contactName" name="name" required placeholder="e.g., Jane Doe" autocomplete="name">
@@ -647,6 +655,9 @@
                 <span>Send Message</span>
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
               </button>
+
+              <!-- Real-time Form Feedback Container -->
+              <div id="formFeedback" class="form-feedback" style="display: none;" role="alert"></div>
             </form>
           </div>
         </div>

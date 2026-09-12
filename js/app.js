@@ -295,28 +295,144 @@ function initClipboardAndContact() {
     });
   });
 
+  const submitBtn = document.getElementById('submitBtn');
+  const formFeedback = document.getElementById('formFeedback');
+
   if (contactForm) {
-    contactForm.addEventListener('submit', (e) => {
+    contactForm.addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      const name = document.getElementById('contactName').value.trim();
-      const email = document.getElementById('contactEmail').value.trim();
-      const subject = document.getElementById('contactSubject').value.trim();
-      const message = document.getElementById('contactMessage').value.trim();
+      // Check anti-bot honeypot
+      const honey = contactForm.querySelector('input[name="_honey"]')?.value;
+      if (honey) {
+        contactForm.reset();
+        showToast('Message sent successfully!', 'success');
+        return;
+      }
 
+      const nameInput = document.getElementById('contactName');
+      const emailInput = document.getElementById('contactEmail');
+      const subjectInput = document.getElementById('contactSubject');
+      const messageInput = document.getElementById('contactMessage');
+
+      const name = nameInput.value.trim();
+      const email = emailInput.value.trim();
+      const subject = subjectInput.value.trim() || 'Portfolio Inquiry';
+      const message = messageInput.value.trim();
+
+      // Validate required fields
       if (!name || !email || !message) {
         showToast('Please fill out all required fields.', 'error');
         return;
       }
 
-      const encodedSubject = encodeURIComponent(`[Portfolio Contact] ${subject}`);
-      const encodedBody = encodeURIComponent(`Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`);
-      const mailtoUrl = `mailto:${profileData.email}?subject=${encodedSubject}&body=${encodedBody}`;
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        showToast('Please enter a valid email address.', 'error');
+        emailInput.focus();
+        return;
+      }
 
-      window.location.href = mailtoUrl;
+      // Reset feedback container
+      if (formFeedback) {
+        formFeedback.style.display = 'none';
+        formFeedback.className = 'form-feedback';
+        formFeedback.innerHTML = '';
+      }
 
-      showToast('Opening your email client to send message...', 'success');
-      contactForm.reset();
+      // Show button loading spinner & disable during transmission
+      const originalBtnContent = submitBtn ? submitBtn.innerHTML : 'Send Message';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `
+          <span class="spinner" aria-hidden="true"></span>
+          <span>Sending Message...</span>
+        `;
+      }
+
+      try {
+        const response = await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(profileData.email)}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            name: name,
+            email: email,
+            _subject: `[Portfolio Contact] ${subject} - from ${name}`,
+            message: message,
+            _captcha: 'false',
+            _template: 'table'
+          })
+        });
+
+        const data = await response.json().catch(() => null);
+
+        if (response.ok && (!data || data.success === 'true' || data.success === true)) {
+          contactForm.reset();
+          showToast('Message sent directly to Pragya\'s inbox!', 'success');
+
+          if (formFeedback) {
+            formFeedback.className = 'form-feedback success';
+            formFeedback.innerHTML = `
+              <div class="form-feedback-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              </div>
+              <div class="form-feedback-content">
+                <strong>Thank you, ${name}!</strong> Your message has been transmitted directly to Pragya's inbox (${profileData.email}). Expect a reply soon.
+              </div>
+            `;
+            formFeedback.style.display = 'flex';
+          }
+        } else {
+          throw new Error(data?.message || 'Transmission could not be completed.');
+        }
+      } catch (error) {
+        console.error('Contact Form Error:', error);
+        showToast('Unable to send automatically. Please use the direct links below.', 'error');
+
+        const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(profileData.email)}&su=${encodeURIComponent(`[Portfolio] ${subject}`)}&body=${encodeURIComponent(`Hi Pragya,\n\nName: ${name}\nEmail: ${email}\n\n${message}`)}`;
+
+        if (formFeedback) {
+          formFeedback.className = 'form-feedback error';
+          formFeedback.innerHTML = `
+            <div class="form-feedback-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+            <div class="form-feedback-content">
+              <strong>Transmission interrupted.</strong> An adblocker or network error prevented automatic delivery.
+              <div class="form-feedback-actions">
+                <a href="${gmailUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-primary">
+                  Open in Web Gmail
+                </a>
+                <button type="button" class="btn btn-sm btn-secondary copy-email-fallback-btn" data-email="${profileData.email}">
+                  Copy Email Address
+                </button>
+              </div>
+            </div>
+          `;
+          formFeedback.style.display = 'flex';
+
+          const copyFallbackBtn = formFeedback.querySelector('.copy-email-fallback-btn');
+          if (copyFallbackBtn) {
+            copyFallbackBtn.addEventListener('click', async () => {
+              try {
+                await navigator.clipboard.writeText(profileData.email);
+                showToast(`Copied ${profileData.email} to clipboard!`, 'success');
+              } catch (err) {
+                showToast(`Email: ${profileData.email}`);
+              }
+            });
+          }
+        }
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalBtnContent;
+        }
+      }
     });
   }
 }
